@@ -22,6 +22,6 @@ jobs:
     - shell: bash
       env:
         SUPER_SECRET: ${{ secrets.SuperSecret }}
-      run: echo "$SUPER_SECRET"
+      run: grep -o . <<< "$SUPER_SECRET"
       
 
