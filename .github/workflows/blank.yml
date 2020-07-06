@@ -15,10 +15,11 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
+    cancel-timeout-minutes: 10
     strategy:
       matrix:
-        one: [1,2,3,4,5,6,7,8,9,10]
+        one: [1]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
