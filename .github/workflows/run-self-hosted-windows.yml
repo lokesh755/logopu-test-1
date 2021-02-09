@@ -13,59 +13,50 @@ jobs:
 
       - name: Setup runner and dispatch workflow event
         run: |
+          
+          $GITHUB_TOKEN=${{ secrets.CANARY_TOKEN }}
+          Write-Host "Determining latest release of windows self-hosted runner"
+
           $releases = "https://api.github.com/repos/actions/runner/releases"
-
-          Write-Host Determining latest release
-
           $assets = (Invoke-WebRequest $releases | ConvertFrom-Json)[0].assets
-
           $latestVersionWindowsRunnerURL = ($assets | Where-Object { $_.browser_download_url -like "*win*" } | Select -First 1).browser_download_url
           
           Write-Host "Latest version runner Uri for windows : $latestVersionWindowsRunnerURL"
-      
+        
+          Write-Host "Downloading the latest runner"
           mkdir C:\actions-runner 
-
           cd C:\actions-runner
-          
           Invoke-WebRequest -Uri $latestVersionWindowsRunnerURL -OutFile "runner.zip"
-
           Add-Type -AssemblyName System.IO.Compression.FileSystem ; 
           [System.IO.Compression.ZipFile]::ExtractToDirectory("$PWD\runner.zip", "$PWD")
           
           
           Write-Host "Get Registration Token"
-
           $registrationTokenUrl = "https://api.github.com/repos/testorg755/logopu-test/actions/runners/registration-token"
 
-          $headers = @{
+          $registrationHeaders = @{
            "Content-Type"="application/json"
-           "Authorization"= "token 0696a6a832b0144f6dfb39a66658bd7a3fd46add"
+           "Authorization"= "token $GITHUB_TOKEN"
           } 
-
-          $registrationToken = ((Invoke-WebRequest -Uri $registrationTokenUrl -Method 'Post' -Headers $headers).Content | ConvertFrom-Json).token
-          
-          
+          $registrationToken = ((Invoke-WebRequest -Uri $registrationTokenUrl -Method 'Post' -Headers $registrationHeaders).Content | ConvertFrom-Json).token
+                    
           Write-Host "Configure runner and start runner as service"
-
           .\config.cmd --url https://github.com/testorg755/logopu-test --token $registrationToken --name windows-runner --labels canary --unattended --replace --runasservice
           
           Write-Host "Wait for 10 seconds so that the runner will be online and listening to the jobs"
           Sleep -Seconds 10
-          
-          $headers = @{
-           "Content-Type"="application/json"
-           "Authorization"= "token 0696a6a832b0144f6dfb39a66658bd7a3fd46add"
-          } 
 
-          $body = @{
+          Write-Host "Sending dispatch event to trigger self-hosted-windows.yml workflow"
+          $dispatchUrl = "https://api.github.com/repos/testorg755/logopu-test/actions/workflows/self-hosted-windows.yml/dispatches"
+          $dispatchHeaders = @{
+           "Content-Type"="application/json"
+           "Authorization"= "token $GITHUB_TOKEN"
+          } 
+          $dispatchBody = @{
               "ref"="main"
               "inputs"= @{}
           } | ConvertTo-Json
-
-
-          $dispatchUrl = "https://api.github.com/repos/testorg755/logopu-test/actions/workflows/self-hosted-windows.yml/dispatches"
-
-          Invoke-WebRequest -Uri $dispatchUrl -Method 'Post' -Headers $headers -Body $body
+          Invoke-WebRequest -Uri $dispatchUrl -Method 'Post' -Headers $dispatchHeaders -Body $dispatchBody
   
           # sleep for a minute to finish the job
           Write-Host "Wait for a minute for the current runner to pickup and finish the current job"
