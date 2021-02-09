@@ -70,8 +70,8 @@ jobs:
 
           Invoke-WebRequest -Uri $dispatchUrl -Method 'Post' -Headers $headers -Body $body
 
-          # sleep for 2 minutes to finish the job
-          Start-Sleep 120
+          # sleep for a minute to finish the job
+          Start-Sleep 60
 
           Stop-Process -Name Runner.* -Force
 
