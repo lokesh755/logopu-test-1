@@ -26,8 +26,8 @@ jobs:
             apt-get install -q -y curl
             apt-get install -q -y wget
           run: |
-            ORG=actions
-            REPO=canary
+            ORG=testorg755
+            REPO=logopu-test
             # We need a special token with permissions to interact with the 'runners/registration-token' endpoint
             GITHUB_TOKEN=${{ secrets.CANARY_TOKEN }}
             export RUNNER_ALLOW_RUNASROOT="1"
