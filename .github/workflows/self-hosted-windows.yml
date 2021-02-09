@@ -2,7 +2,7 @@
 name: self-hosted-windows
 
 on:
-workflow_dispatch:
+  workflow_dispatch:
   schedule:
     - cron: '0 * * * *'
 
