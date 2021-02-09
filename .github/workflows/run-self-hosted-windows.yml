@@ -1,0 +1,104 @@
+name: Set up self-hosted windows runner on hosted runner
+
+on:
+  # Note: invoke workflow_dispatch only between scheduled runs.
+  # Otherwise, the workflow may be sent to the wrong configured runner.
+  # This caveat will go away once we enable and re-write this workflow to take advantage of ephemeral runners.
+  workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'
+      
+jobs:
+  create_runner:
+    runs-on: windows-latest
+    steps:
+      - uses: uraimo/run-on-arch-action@v2.0.5
+        name: 64 bit ARM
+        id: runcmd
+        with:
+          arch: aarch64
+          distro: buster
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update -q -y
+            apt-get install -q -y sudo
+            apt-get install -q -y curl
+            apt-get install -q -y wget
+          run: |
+            ORG=testorg755
+            REPO=logopu-test
+            # We need a special token with permissions to interact with the 'runners/registration-token' endpoint
+            GITHUB_TOKEN=${{ secrets.CANARY_TOKEN }}
+            export RUNNER_ALLOW_RUNASROOT="1"
+            
+            echo "Curl for runner"
+            # change arm64 to arm- for 32 bit
+            curl -s https://api.github.com/repos/actions/runner/releases \
+              | grep "browser_download_url" \
+              | grep "arm64" \
+              | cut -d : -f 2,3 \
+              | tr -d \" \
+              | head -n 1 \
+              | wget -qi -
+            tar xzf ./*.tar.gz
+            
+            echo "Get Registration Token"
+            RUNNER_TOKEN=$(curl -X POST https://api.github.com/repos/${ORG}/${REPO}/actions/runners/registration-token \
+              -H "Content-Type: application/json" \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              | grep "token" \
+              | cut -d : -f 2 \
+              | tr -d '"' \
+              | tr -d ',')
+            
+            echo "Install Dependencies"
+            ./bin/installdependencies.sh
+            
+            echo "Configure runner"
+            ./config.sh --url https://github.com/${ORG}/${REPO} \
+              --token $RUNNER_TOKEN \
+              --name arm-runner \
+              --labels arm,canary \
+              --unattended \
+              --replace
+            
+            echo "Boot runner"
+            ./run.sh &
+            RUNNER_PID=$!
+            
+            echo "Wait until runner is ready to listen for jobs"  
+            x=0
+            while :
+            do
+              if ! grep -q "Listening for Jobs" _diag/Runner*.log
+              then
+                sleep 1
+              else
+                break
+              fi
+              
+              # Wait for up to 60 seconds for the runner to be ready to listen for jobs
+              # This is a **very** generous limit, runner registration usually takes ~5 seconds
+              # If runner is still not ready by then, then something is wrong with the service
+              # Let the dispatched workflows fail naturally if this is the case
+              if [ $x -eq 60 ]
+              then
+                echo "Runner took too long to register, dispatched workflows may not execute"
+                break
+              fi 
+              
+              x=$(( $x + 1 ))
+            done
+            
+            echo "Run self-hosted-linux workflow"
+            curl -X POST https://api.github.com/repos/${ORG}/${REPO}/actions/workflows/self-hosted-linux.yml/dispatches \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -d '{"ref": "main", "inputs": { } }'
+               
+            # Self-hosted-linux runs under a few seconds, let's give it an order of magnitude more time  
+            sleep 60
+            
+            echo "Remove runner"
+            kill $RUNNER_PID
+            ./config.sh remove --token $RUNNER_TOKEN
