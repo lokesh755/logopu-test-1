@@ -24,4 +24,9 @@ jobs:
           $latestVersionWindowsRunnerURL = ($assets | Where-Object { $_.browser_download_url -like "*win*" } | Select -First 1).browser_download_url
           
           Write-Host "Latest version runner Uri for windows : $latestVersionWindowsRunnerURL"
+          
+          echo "::set-env name=latestVersionWindowsRunnerURL::$latestVersionWindowsRunnerURL"
+      - name: Download runner
+        run: |
+          Write-Host $latestVersionWindowsRunnerURL
 
