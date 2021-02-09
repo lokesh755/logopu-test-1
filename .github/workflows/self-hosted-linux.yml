@@ -1,15 +1,21 @@
 
-name: self-hosted-linux
+name: self-hosted-windows
 
 on:
+
   workflow_dispatch:
+      
+  schedule:
+    - cron: '0 * * * *'
 
 jobs:
   basic:
-    runs-on: [self-hosted, linux, canary]
-    name: linux
+    runs-on: [self-hosted, windows]
+    name: windows
     steps:
     - name: OS info
-      run: uname -a
+      run: |
+        [System.Environment]::OSVersion.Version
     - name: env
-      run: env
+      run: |
+        gci env:* | sort-object name
