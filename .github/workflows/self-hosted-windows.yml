@@ -1,0 +1,23 @@
+
+name: self-hosted-windows
+
+on:
+  push:
+    paths:
+    - 'runner/*'
+    - 'self-hosted/*'
+    - '.github/workflows/self-hosted-windows.yml'
+  schedule:
+    - cron: '0 * * * *'
+
+jobs:
+  basic:
+    runs-on: [self-hosted, windows]
+    name: windows
+    steps:
+    - name: OS info
+      run: |
+        [System.Environment]::OSVersion.Version
+    - name: env
+      run: |
+        gci env:* | sort-object name
