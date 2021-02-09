@@ -3,11 +3,6 @@ name: self-hosted-windows
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-    - 'runner/*'
-    - 'self-hosted/*'
-    - '.github/workflows/self-hosted-windows.yml'
       
   schedule:
     - cron: '0 * * * *'
