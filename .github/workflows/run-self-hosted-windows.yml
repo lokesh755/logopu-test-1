@@ -21,7 +21,7 @@ jobs:
 
           $assets = (Invoke-WebRequest $releases | ConvertFrom-Json)[0].assets
 
-          $latestVersionWindowsRunnerURL = $assets | Where-Object { $_.browser_download_url -like "*win*" } | Select -First 1 -Property browser_download_url
+          $latestVersionWindowsRunnerURL = ($assets | Where-Object { $_.browser_download_url -like "*win*" } | Select -First 1).browser_download_url
           
           Write-Host "Latest version runner Uri for windows : $latestVersionWindowsRunnerURL"
 
