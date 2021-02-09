@@ -14,7 +14,6 @@ jobs:
       - name: Setup runner and dispatch workflow event
         run: |
           
-          $GITHUB_TOKEN=${{ secrets.CANARY_TOKEN }}
           Write-Host "Determining latest release of windows self-hosted runner"
 
           $releases = "https://api.github.com/repos/actions/runner/releases"
@@ -36,7 +35,7 @@ jobs:
 
           $registrationHeaders = @{
            "Content-Type"="application/json"
-           "Authorization"= "token $GITHUB_TOKEN"
+           "Authorization"= "token ${{ secrets.CANARY_TOKEN }}"
           } 
           $registrationToken = ((Invoke-WebRequest -Uri $registrationTokenUrl -Method 'Post' -Headers $registrationHeaders).Content | ConvertFrom-Json).token
                     
@@ -50,7 +49,7 @@ jobs:
           $dispatchUrl = "https://api.github.com/repos/testorg755/logopu-test/actions/workflows/self-hosted-windows.yml/dispatches"
           $dispatchHeaders = @{
            "Content-Type"="application/json"
-           "Authorization"= "token $GITHUB_TOKEN"
+           "Authorization"= "token ${{ secrets.CANARY_TOKEN }}"
           } 
           $dispatchBody = @{
               "ref"="main"
