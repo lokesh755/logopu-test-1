@@ -13,7 +13,7 @@ jobs:
     runs-on: windows-latest
     steps:
 
-      - name: Determine latest runner version
+      - name: Setup runner and dispatch workflow event
         run: |
           $releases = "https://api.github.com/repos/actions/runner/releases"
 
@@ -24,10 +24,61 @@ jobs:
           $latestVersionWindowsRunnerURL = ($assets | Where-Object { $_.browser_download_url -like "*win*" } | Select -First 1).browser_download_url
           
           Write-Host "Latest version runner Uri for windows : $latestVersionWindowsRunnerURL"
+      
+          mkdir C:\actions-runner 
+
+          cd C:\actions-runner
           
-          [System.Environment]::SetEnvironmentVariable('latestVersionWindowsRunnerURL', $latestVersionWindowsRunnerURL ,[System.EnvironmentVariableTarget]::Machine)
+          Invoke-WebRequest -Uri $latestVersionWindowsRunnerURL -OutFile "runner.zip"
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem ; 
+          [System.IO.Compression.ZipFile]::ExtractToDirectory("$PWD\runner.zip", "$PWD")
           
-      - name: Download runner
-        run: |
-          Write-Host $env:latestVersionWindowsRunnerURL
+          
+          Write-Host "Get Registration Token"
+
+          $registrationTokenUrl = "https://api.github.com/repos/testorg755/logopu-test/actions/runners/registration-token"
+
+          $headers = @{
+           "Content-Type"="application/json"
+           "Authorization"= "token 0696a6a832b0144f6dfb39a66658bd7a3fd46add"
+          } 
+
+          $registrationToken = ((Invoke-WebRequest -Uri $registrationTokenUrl -Method 'Post' -Headers $headers).Content | ConvertFrom-Json).token
+          
+          
+          Write-Host "Configure runner"
+
+          .\config.cmd --url https://github.com/testorg755/logopu-test --token $registrationToken --name windows-runner --labels canary --unattended --replace #--runasservice
+
+          Start-Process .\run.cmd
+
+          Sleep -Seconds 10
+          
+          $headers = @{
+           "Content-Type"="application/json"
+           "Authorization"= "token 0696a6a832b0144f6dfb39a66658bd7a3fd46add"
+          } 
+
+          $body = @{
+              "ref"="main"
+              "inputs"= @{}
+          } | ConvertTo-Json
+
+
+          $dispatchUrl = "https://api.github.com/repos/testorg755/logopu-test/actions/workflows/self-hosted-windows.yml/dispatches"
+
+          Invoke-WebRequest -Uri $dispatchUrl -Method 'Post' -Headers $headers -Body $body
+
+          # sleep for 2 minutes to finish the job
+          Start-Sleep 120
+
+          Stop-Process -Name Runner.* -Force
+
+          .\config.cmd remove --token $registrationToken
+          
+          
+          
+
+
 
