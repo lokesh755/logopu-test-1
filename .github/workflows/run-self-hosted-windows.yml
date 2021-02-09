@@ -25,8 +25,9 @@ jobs:
           
           Write-Host "Latest version runner Uri for windows : $latestVersionWindowsRunnerURL"
           
-          echo "::set-env name=latestVersionWindowsRunnerURL::$latestVersionWindowsRunnerURL"
+          [System.Environment]::SetEnvironmentVariable('latestVersionWindowsRunnerURL', $latestVersionWindowsRunnerURL ,[System.EnvironmentVariableTarget]::Machine)
+          
       - name: Download runner
         run: |
-          Write-Host $latestVersionWindowsRunnerURL
+          Write-Host $env:latestVersionWindowsRunnerURL
 
