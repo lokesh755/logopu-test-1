@@ -8,6 +8,7 @@ on:
     - 'runner/*'
     - 'self-hosted/*'
     - '.github/workflows/self-hosted-windows.yml'
+      
   schedule:
     - cron: '0 * * * *'
 
