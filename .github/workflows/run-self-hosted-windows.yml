@@ -49,7 +49,7 @@ jobs:
 
           .\config.cmd --url https://github.com/testorg755/logopu-test --token $registrationToken --name windows-runner --labels canary --unattended --replace #--runasservice
 
-          Start-Process .\run.cmd
+          $runnerProc = Start-Process .\run.cmd -PassThru
 
           Sleep -Seconds 10
           
